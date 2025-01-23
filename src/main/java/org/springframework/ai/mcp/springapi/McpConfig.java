@@ -22,19 +22,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.McpAsyncServer;
 import org.springframework.ai.mcp.server.McpServer;
 import org.springframework.ai.mcp.server.transport.StdioServerTransport;
-import org.springframework.ai.mcp.server.transport.WebMvcSseServerTransport;
 import org.springframework.ai.mcp.spec.McpSchema;
 import org.springframework.ai.mcp.spec.ServerMcpTransport;
 import org.springframework.ai.mcp.spring.ToolHelper;
+import org.springframework.ai.mcp.springapi.SpringIoApi.Generation;
 import org.springframework.ai.mcp.springapi.SpringIoApi.Release;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.function.RouterFunction;
-import org.springframework.web.servlet.function.ServerResponse;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Martin Lippert
@@ -51,24 +46,11 @@ public class McpConfig {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = "transport", name = "mode", havingValue = "sse")
-	WebMvcSseServerTransport webMvcSseServerTransport() {
-		return new WebMvcSseServerTransport(new ObjectMapper(), "/mcp/message");
-	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = "transport", name = "mode", havingValue = "sse")
-	RouterFunction<ServerResponse> routerFunction(WebMvcSseServerTransport transport) {
-		return transport.getRouterFunction();
-	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = "transport", name = "mode", havingValue = "stdio")
 	StdioServerTransport stdioServerTransport() {
 		return new StdioServerTransport();
 	}
 
-	public static record GetSpringProjectReleasesInput(String springProjectId) {}
+	public static record GetSpringProjectIdInput(String springProjectId) {}
 	
 	@Bean
 	McpAsyncServer mcpServer(ServerMcpTransport transport) {
@@ -86,13 +68,24 @@ public class McpConfig {
 			.tools(
 					ToolHelper.toToolRegistration(
 						FunctionCallback.builder()
-							.function("getSpringProjectReleaseInformation", (Function<GetSpringProjectReleasesInput, Release[]>) s -> {
+							.function("getSpringProjectReleaseInformation", (Function<GetSpringProjectIdInput, Release[]>) s -> {
 								logger.info("get spring project releases for: " + s);
 								return springIoApi.getReleases(s.springProjectId());
 							})
-							.description("Get information about ")
-							.inputType(GetSpringProjectReleasesInput.class)						
-							.build()))
+							.description("Get information about Spring project releases")
+							.inputType(GetSpringProjectIdInput.class)						
+							.build()),
+					
+					ToolHelper.toToolRegistration(
+							FunctionCallback.builder()
+								.function("getSpringProjectSupportDatesInformation", (Function<GetSpringProjectIdInput, Generation[]>) s -> {
+									logger.info("get spring project support dates for: " + s);
+									return springIoApi.getGenerations(s.springProjectId());
+								})
+								.description("Get information about support ranges and dates for Spring projects")
+								.inputType(GetSpringProjectIdInput.class)						
+								.build())
+					)
 			.async();
 		return server;
 	}

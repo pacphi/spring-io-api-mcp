@@ -31,23 +31,38 @@ public class SpringIoApi {
 		this.restClient = restClientBuilder.baseUrl("https://api.spring.io").build();
 	}
 
-	public record Main(Embedded _embedded) {}
-	public record Embedded(Release[] releases) {}
+	public record ReleasesRoot(ReleasesEmbedded _embedded) {}
+	public record ReleasesEmbedded(Release[] releases) {}
 	public record Release(String version, String status, boolean current) {}
+	
+	public record GenerationsRoot(GenerationsEmbedded _embedded) {}
+	public record GenerationsEmbedded(Generation[] generations) {}
+	public record Generation(String name, String initialReleaseDate, String ossSupportEndDate, String commercialSupportEndDate) {}
 
 	public Release[] getReleases(String project) {
-		Main release = restClient.get()
+		ReleasesRoot release = restClient.get()
 			.uri("https://api.spring.io/projects/" + project + "/releases")
 			.accept(MediaTypes.HAL_JSON)
 			.retrieve()
-			.body(Main.class);
+			.body(ReleasesRoot.class);
 		
 		return release._embedded.releases;
+	}
+
+	public Generation[] getGenerations(String project) {
+		GenerationsRoot release = restClient.get()
+			.uri("https://api.spring.io/projects/" + project + "/generations")
+			.accept(MediaTypes.HAL_JSON)
+			.retrieve()
+			.body(GenerationsRoot.class);
+		
+		return release._embedded.generations;
 	}
 
 	public static void main(String[] args) {
 		SpringIoApi springApi = new SpringIoApi(RestClient.builder());
 		springApi.getReleases("spring-boot");
+		springApi.getGenerations("spring-boot");
 	}
 
 }

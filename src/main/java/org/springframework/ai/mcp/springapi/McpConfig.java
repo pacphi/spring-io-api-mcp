@@ -27,6 +27,7 @@ import org.springframework.ai.mcp.spec.ServerMcpTransport;
 import org.springframework.ai.mcp.spring.ToolHelper;
 import org.springframework.ai.mcp.springapi.SpringIoApi.Generation;
 import org.springframework.ai.mcp.springapi.SpringIoApi.Release;
+import org.springframework.ai.mcp.springapi.SpringIoApi.UpcomingRelease;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,9 +57,7 @@ public class McpConfig {
 	McpAsyncServer mcpServer(ServerMcpTransport transport) {
 
 		var capabilities = McpSchema.ServerCapabilities.builder()
-//			.resources(false, true)
 			.tools(true)
-//			.prompts(true)
 			.logging()
 			.build();
 
@@ -69,7 +68,7 @@ public class McpConfig {
 					ToolHelper.toToolRegistration(
 						FunctionCallback.builder()
 							.function("getSpringProjectReleaseInformation", (Function<GetSpringProjectIdInput, Release[]>) s -> {
-								logger.info("get spring project releases for: " + s);
+								logger.info("get Spring project releases for: " + s);
 								return springIoApi.getReleases(s.springProjectId());
 							})
 							.description("Get information about Spring project releases")
@@ -79,13 +78,23 @@ public class McpConfig {
 					ToolHelper.toToolRegistration(
 							FunctionCallback.builder()
 								.function("getSpringProjectSupportDatesInformation", (Function<GetSpringProjectIdInput, Generation[]>) s -> {
-									logger.info("get spring project support dates for: " + s);
+									logger.info("get Spring project support dates for: " + s);
 									return springIoApi.getGenerations(s.springProjectId());
 								})
 								.description("Get information about support ranges and dates for Spring projects")
 								.inputType(GetSpringProjectIdInput.class)						
-								.build())
-					)
+								.build()),
+
+					ToolHelper.toToolRegistration(
+							FunctionCallback.builder()
+									.function("getSpringProjectUpcomingReleaseInformation", (Function<GetSpringProjectIdInput, UpcomingRelease[]>) s -> {
+										logger.info("get Spring upcoming releases in the next 90 days");
+										return springIoApi.getUpcomingReleases();
+									})
+									.description("Get information about upcoming releases for Spring projects in the next 90 days")
+									.inputType(Void.class)
+									.build())
+			)
 			.async();
 		return server;
 	}

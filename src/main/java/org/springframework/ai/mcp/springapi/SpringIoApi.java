@@ -19,6 +19,11 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * @author Martin Lippert
  */
@@ -38,6 +43,10 @@ public class SpringIoApi {
 	public record GenerationsRoot(GenerationsEmbedded _embedded) {}
 	public record GenerationsEmbedded(Generation[] generations) {}
 	public record Generation(String name, String initialReleaseDate, String ossSupportEndDate, String commercialSupportEndDate) {}
+
+	public record UpcomingReleasesRoot(UpcomingReleasesEmbedded _embedded) {}
+	public record UpcomingReleasesEmbedded(UpcomingRelease[] releases) {}
+	public record UpcomingRelease(boolean allDay, String backgroundColor, LocalDate start, String title, String url) {}
 
 	public Release[] getReleases(String project) {
 		ReleasesRoot release = restClient.get()
@@ -59,10 +68,33 @@ public class SpringIoApi {
 		return release._embedded.generations;
 	}
 
+	public UpcomingRelease[] getUpcomingReleases() {
+		LocalDate start = LocalDate.now();
+		LocalDate end = start.plusDays(90L);
+
+		// Convert LocalDate to ISO format and handle timezone
+		ZonedDateTime startZdt = start.atStartOfDay(ZoneId.systemDefault());
+		ZonedDateTime endZdt = end.atStartOfDay(ZoneId.systemDefault());
+
+		UpcomingReleasesRoot upcoming = restClient.get()
+				.uri(uriBuilder -> uriBuilder
+						.scheme("https")
+						.host("calendar.spring.io")
+						.path("/releases")
+						.queryParam("start", startZdt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+						.queryParam("end", endZdt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+						.build())
+				.accept(MediaTypes.HAL_JSON)
+				.retrieve()
+				.body(UpcomingReleasesRoot.class);
+		return upcoming._embedded.releases;
+	}
+
 	public static void main(String[] args) {
 		SpringIoApi springApi = new SpringIoApi(RestClient.builder());
 		springApi.getReleases("spring-boot");
 		springApi.getGenerations("spring-boot");
+		springApi.getUpcomingReleases();
 	}
 
 }

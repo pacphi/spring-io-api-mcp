@@ -15,6 +15,7 @@
 */
 package org.springframework.ai.mcp.springapi;
 
+import java.util.List;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class McpConfig {
 
 					ToolHelper.toToolRegistration(
 							FunctionCallback.builder()
-									.function("getSpringProjectUpcomingReleaseInformation", (Function<GetSpringProjectIdInput, UpcomingRelease[]>) s -> {
+									.function("getSpringProjectUpcomingReleaseInformation", (Function<GetSpringProjectIdInput, List<UpcomingRelease>>) s -> {
 										logger.info("get Spring upcoming releases in the next 90 days");
 										return springIoApi.getUpcomingReleases();
 									})

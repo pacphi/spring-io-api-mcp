@@ -20,8 +20,9 @@ import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.server.McpAsyncServer;
+
 import org.springframework.ai.mcp.server.McpServer;
+import org.springframework.ai.mcp.server.McpSyncServer;
 import org.springframework.ai.mcp.server.transport.StdioServerTransport;
 import org.springframework.ai.mcp.spec.McpSchema;
 import org.springframework.ai.mcp.spec.ServerMcpTransport;
@@ -55,18 +56,18 @@ public class McpConfig {
 	public static record GetSpringProjectIdInput(String springProjectId) {}
 	
 	@Bean
-	McpAsyncServer mcpServer(ServerMcpTransport transport) {
+	McpSyncServer mcpServer(ServerMcpTransport transport) {
 
 		var capabilities = McpSchema.ServerCapabilities.builder()
 			.tools(true)
 			.logging()
 			.build();
 
-		var server = McpServer.using(transport)
+		var server = McpServer.sync(transport)
 			.serverInfo("MCP Server for Spring project release information", "1.0.0")
 			.capabilities(capabilities)
 			.tools(
-					ToolHelper.toToolRegistration(
+					ToolHelper.toSyncToolRegistration(
 						FunctionCallback.builder()
 							.function("getSpringProjectReleaseInformation", (Function<GetSpringProjectIdInput, Release[]>) s -> {
 								logger.info("get Spring project releases for: " + s);
@@ -76,7 +77,7 @@ public class McpConfig {
 							.inputType(GetSpringProjectIdInput.class)						
 							.build()),
 					
-					ToolHelper.toToolRegistration(
+					ToolHelper.toSyncToolRegistration(
 							FunctionCallback.builder()
 								.function("getSpringProjectSupportDatesInformation", (Function<GetSpringProjectIdInput, Generation[]>) s -> {
 									logger.info("get Spring project support dates for: " + s);
@@ -97,6 +98,7 @@ public class McpConfig {
 									.build())
 			)
 			.async();
+    
 		return server;
 	}
 

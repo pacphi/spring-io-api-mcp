@@ -17,6 +17,8 @@ Add the configuration to the MCP server configs (e.g. in Cline when using VSCode
     "spring-project-information": {
       "command": "java",
       "args": [
+        "-Dtransport.mode=stdio",
+        "-Dspring.main.web-application-type=none",
         "-Dlogging.file.name=/spring-io-api-mcp.log",
          "-Dtransport.mode=stdio",
         "-Dspring.main.web-application-type=none",
